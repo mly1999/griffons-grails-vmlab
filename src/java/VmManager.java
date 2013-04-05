@@ -1,3 +1,5 @@
+ 
+
 import java.net.URL;
 import com.vmware.vim25.*;
 import com.vmware.vim25.mo.*;
@@ -68,8 +70,7 @@ public class VmManager
     public void cloneVM(String vm_name,
                         String template_name, 
                         String vmfolder,
-                        String hostname,
-                        String resource_pool)
+                        String hostname)
     {        
         Folder targetFolder = null;         //reference to target Folder object
         VirtualMachine template = null;     //reference to VirtualMachine object of the template
@@ -100,8 +101,17 @@ public class VmManager
             // Get the object reference to the target datastore from host system. This code is assuming one datastore for each host.
             relocateSpec.setDatastore( hs.getDatastores()[0].getMOR() );
             
-            ResourcePool rp = (ResourcePool) rootNav.searchManagedEntity("ResourcePool", resource_pool);
-            relocateSpec.setPool( rp.getMOR() );
+            ManagedEntity[] rps = rootNav.searchManagedEntities("ResourcePool");
+            ResourcePool targetRP = null;
+            int cnt = 0;
+            while(cnt < rps.length && targetRP == null) {
+                if( rps[cnt].getName().equals( hostname ) ){
+                    targetRP = (ResourcePool) rps[cnt];
+                    System.out.println("Target resource found ... ");
+                }
+                cnt++;
+            }
+            relocateSpec.setPool( targetRP.getMOR() );
         } catch (Exception ex) {
             System.out.println("Error in cloneVM() : code 02 : " + ex.toString());
         }
@@ -135,6 +145,10 @@ public class VmManager
     public void destroyVM(String vm_name) {
         try {
             VirtualMachine vm = (VirtualMachine) rootNav.searchManagedEntity("VirtualMachine",vm_name);
+            if(vm==null) {
+                System.out.println("The following virtual machine was not found: " + vm_name);
+                return;
+            }
             
             Task task = vm.destroy_Task();
             if(task.waitForTask()==Task.SUCCESS) {
@@ -154,6 +168,10 @@ public class VmManager
     public void powerOnVM(String vm_name) {
         try {
             VirtualMachine vm = (VirtualMachine) rootNav.searchManagedEntity("VirtualMachine",vm_name);
+            if(vm==null) {
+                System.out.println("The following virtual machine was not found: " + vm_name);
+                return;
+            }
             
             Task task = vm.powerOnVM_Task(null);
             if(task.waitForTask()==Task.SUCCESS) {
@@ -173,6 +191,10 @@ public class VmManager
     public void powerOffVM(String vm_name) {
         try {
             VirtualMachine vm = (VirtualMachine) rootNav.searchManagedEntity("VirtualMachine",vm_name);
+            if(vm==null) {
+                System.out.println("The following virtual machine was not found: " + vm_name);
+                return;
+            }
             
             Task task = vm.powerOffVM_Task();           
             if(task.waitForTask()==Task.SUCCESS) {
@@ -190,6 +212,10 @@ public class VmManager
     public void suspendVM(String vm_name) {
         try {
             VirtualMachine vm = (VirtualMachine) rootNav.searchManagedEntity("VirtualMachine",vm_name);
+            if(vm==null) {
+                System.out.println("The following virtual machine was not found: " + vm_name);
+                return;
+            }
             
             Task task = vm.suspendVM_Task();
             if(task.waitForTask()==Task.SUCCESS){
@@ -207,6 +233,10 @@ public class VmManager
     public void resetVM(String vm_name) {
         try {
             VirtualMachine vm = (VirtualMachine) rootNav.searchManagedEntity("VirtualMachine",vm_name);
+            if(vm==null) {
+                System.out.println("The following virtual machine was not found: " + vm_name);
+                return;
+            }
             
             Task task = vm.resetVM_Task();
             if(task.waitForTask()==Task.SUCCESS){
@@ -225,6 +255,11 @@ public class VmManager
     void coldMigrateVM(String vm_name, String destinationHost) {
         try {
             VirtualMachine vm = (VirtualMachine) rootNav.searchManagedEntity("VirtualMachine",vm_name);
+            if(vm==null) {
+                System.out.println("The following virtual machine was not found: " + vm_name);
+                return;
+            }
+            
             if(vm.getRuntime().getPowerState().toString().equals("poweredOn")) {
                 suspendVM(vm_name); // suspend vm if needed  
             }
@@ -257,4 +292,67 @@ public class VmManager
             System.out.println( e.toString());
         }
     }
+    
+    /**
+     * Reconfigure resource allocation for virtual machine. CPU and Memory only
+     * *Note: Virtual machine must be in a p
+     * 
+     * @param   vm_name     - String value of target virtual machine name
+     * @param   device      - String value of device. Only 2 options: cpu|memory
+     * @param   value       - String value 
+     *                          = for CPU: 1, 2, 4
+     *                          = for Memory in mb: 512, 1024, 2048, 4096
+     * 
+     * @return   void
+     */
+    void allocateResourceVM(String vm_name,
+                            String deviceType,                             
+                            String value) {
+        try {
+            VirtualMachine vm = (VirtualMachine) rootNav.searchManagedEntity("VirtualMachine",vm_name);
+            if(vm==null) {
+              System.out.println("The following virtual machine was not found: " + vm_name);
+              return;
+            }
+            
+            VirtualMachineConfigSpec vmConfigSpec = new VirtualMachineConfigSpec();
+            
+            if("memory".equalsIgnoreCase(deviceType)) {
+                /** Test lab has a total mem capacity of about 9698 MB per host **/
+                System.out.println("Setting memory for VM [" + vm_name + "] to " + value);
+                vmConfigSpec.setMemoryMB( Long.parseLong(value) );
+                  
+                ResourceAllocationInfo raInfo = new ResourceAllocationInfo();
+                raInfo.setReservation(Long.parseLong(value)); // in MB
+                //SharesInfo sharesInfo = new SharesInfo();
+                //sharesInfo.setLevel(SharesLevel.high); // allocate all resources from virtual hardware
+                //raInfo.setShares(sharesInfo);
+                vmConfigSpec.setMemoryAllocation( raInfo );  
+            }
+            else if("cpu".equalsIgnoreCase(deviceType)) {
+                /** Test lab has a total cpu capacity of 15853 MHz per host 
+                 * 
+                 *  Total cpu available is 8 and caculated 1 cpu to be equivalent to 1980 MHz when calculating reservation
+                  */
+                System.out.println("Setting CPU for VM:  [" + vm_name + "] to " + value);
+                  
+                vmConfigSpec.setNumCPUs( Integer.parseInt(value) );  
+                ResourceAllocationInfo raInfo = new ResourceAllocationInfo();
+                raInfo.setReservation( Long.parseLong(value) * 1980 );
+                vmConfigSpec.setCpuAllocation( raInfo );
+            }
+            else {
+                System.out.println("Incorrect option for " + vm_name);
+            }
+            
+            Task task = vm.reconfigVM_Task(vmConfigSpec);
+            if(task.waitForTask()==Task.SUCCESS){ 
+                System.out.println("Resource allocated set for " + vm_name); 
+            }
+        } catch(Exception e) {
+            System.out.println( e.toString());
+        }
+    }
+    
+    
 }
