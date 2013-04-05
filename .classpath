@@ -128,5 +128,7 @@
 	</classpathentry>
 	<classpathentry kind="con" path="org.grails.ide.eclipse.core.CLASSPATH_CONTAINER"/>
 	<classpathentry exported="true" kind="con" path="GROOVY_DSL_SUPPORT"/>
+	<classpathentry kind="lib" path="C:/Users/mly/Documents/workspace/workspace-ggts-3.2.0.RELEASE/griffons-grails-vmlab/lib/dom4j-1.6.1.jar"/>
+	<classpathentry kind="lib" path="C:/Users/mly/Documents/workspace/workspace-ggts-3.2.0.RELEASE/griffons-grails-vmlab/lib/vijava2120100824.jar"/>
 	<classpathentry kind="output" path="target-eclipse/classes"/>
 </classpath>
