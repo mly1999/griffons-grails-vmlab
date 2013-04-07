@@ -1,4 +1,4 @@
- 
+ package com.griffons.vmanager;
 
 import java.net.URL;
 import com.vmware.vim25.*;
@@ -353,6 +353,40 @@ public class VmManager
             System.out.println( e.toString());
         }
     }
+    
+    /**
+    * Check whether the demanded resourses are available on the server or not.
+    * 
+    * @param   hostname        - String value containing the name of the server
+    * @param   device          - String value for the resource to be checked
+    */
+   public long getReservationAvailFromHost(String hostname, String device)
+   {
+	   long returnValue = -1;
+	   
+       try
+       {
+           ResourcePool resPool = (ResourcePool) rootNav.searchManagedEntity("ResourcePool", hostname);
+           ResourcePoolRuntimeInfo resInfo = resPool.getRuntime();
+           
+           if(device.equalsIgnoreCase("cpu"))
+           {
+               ResourcePoolResourceUsage resCPU = resInfo.getCpu();
+//               System.out.println("The Unreserved CPU is : "+ resCPU.getUnreservedForVm());
+               returnValue = resCPU.getUnreservedForVm();
+           }
+           else if(device.equalsIgnoreCase("memory"))
+           {
+               ResourcePoolResourceUsage resMem = resInfo.getMemory();
+//               System.out.println("The Unreserved Memory is : "+ resMem.getUnreservedForVm());
+               returnValue = resMem.getUnreservedForVm();
+           }
+       }
+       catch ( Exception e ) 
+       { System.out.println( "Error in method getReservationAvailFromHost : " + e.toString() ) ; }
+       
+       return returnValue;
+   }
     
     
 }
