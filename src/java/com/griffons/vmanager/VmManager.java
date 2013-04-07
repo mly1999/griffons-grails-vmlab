@@ -426,4 +426,47 @@ public class VmManager
         return VMList;
     }
     
+    
+    public long[] getVMInfo(String vm_name) {
+    	long[] configSpec = new long[2];
+    	
+    	try {
+    	VirtualMachine vm = (VirtualMachine) rootNav.searchManagedEntity("VirtualMachine", vm_name);
+    	VirtualMachineConfigInfo vmci = vm.getConfig();
+    	ResourceAllocationInfo rCpu = vmci.getCpuAllocation(); 
+    	configSpec[0] = rCpu.getReservation();
+    	
+    	ResourceAllocationInfo rMem = vmci.getMemoryAllocation();
+    	configSpec[1] = rMem.getReservation();
+    	
+    	} catch(Exception e){
+    		System.out.println( e.toString() );
+    	}
+    	
+    	return configSpec;
+    }
+    
+    
+    
+    public String getVMRPInfo(String vm_name) {
+    	String hostname = "";
+    	try {
+    		VirtualMachine vm = (VirtualMachine) rootNav.searchManagedEntity("VirtualMachine", vm_name);
+    		hostname = vm.getResourcePool().getSummary().getName();
+    	} catch(Exception e){
+    		System.out.println( e.toString() );
+    	}
+    	
+    	return hostname;
+    }
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
 }

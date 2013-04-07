@@ -32,24 +32,60 @@ class MainController {
 				
 				// set resource reservation
 				if(clonesuccess) {
-					
+					vmanger.allocateResourceVM(vmname, "cpu", params?.cpu)
+					vmanger.allocateResourceVM(vmname, "memory", params?.memory )
 				}
 				else {
-					// Let the user know it was not created successfully 
+					 // print error message here
+				}
+			}
+			
+			if ( params?.event == "deployVm" ) // NAME OF ACTION
+			{
+				boolean availableResource = true;
+				boolean coldMigrate = false;
+				
+				def currHost = vmanager.getVMRPInfo(vmname)
+				def otherHost = currHost == VmConfig.getHost01() ? VmConfig.getHost02: VmConfig.getHost01()
+				
+				def vmname = params?.vmname
+				List configSpec getVMInfo(vmname)
+				
+	
+				if(configSpec[0] > vmanager.getReservationAvailFromHost(currHost, "cpu") )
+				{
+					println "Not enought cpu resource"
+					availableResource = false
+				}		
+
+				if(configSpec[1] > vmanager.getReservationAvailFromHost(currHost, "memory") {
+					println "Not enough memory resource"
+					availableResource = false
 				}
 				
 				
+				if(!availableResource) {
+					
+					availableResource = true
+					if(configSpec[0] > vmanager.getReservationAvailFromHost(otherHost, "cpu") ) {
+						println "Not enought cpu resource"
+						availableResource = false
+					} 
+					
+					if(configSpec[1] > vmanager.getReservationAvailFromHost(otherHost, "memory")) {
+						println "Not enough memory resource"
+						availableResource = false
+					}
+					
+					if(availableResource) {
+				     // cold migrate here
+						def success = vmanager.coldMigrateVM(vmname, otherHost)
+						vmanager.powerOnVM(vmname)
+					}
+				}
+				
+			
 			}
-			
-			
-			
-			
-			
-			
-			
-			
-			
-			
 			
 			
 			
