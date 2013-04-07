@@ -3,6 +3,7 @@
 import java.net.URL;
 import com.vmware.vim25.*;
 import com.vmware.vim25.mo.*;
+import java.util.ArrayList;
 
 /**
  * Provides basic tasks to manage a vcenter
@@ -63,15 +64,16 @@ public class VmManager
      * @param   template_name       - string value of the template name to be cloned
      * @param   vmfolder            - string value of target folder name
      * @param   hostname            - string value of target host
-     * @param   resource_pool       - String value of target resource pool
      * 
      * @return  void
      */
-    public void cloneVM(String vm_name,
+    public boolean cloneVM(String vm_name,
                         String template_name, 
                         String vmfolder,
                         String hostname)
     {        
+    	// NOTE TO SELF : need to refactor this to make it cleaner ...
+    	
         Folder targetFolder = null;         //reference to target Folder object
         VirtualMachine template = null;     //reference to VirtualMachine object of the template
         VirtualMachine checkName = null;
@@ -80,9 +82,8 @@ public class VmManager
             template = (VirtualMachine) rootNav.searchManagedEntity("VirtualMachine", template_name);
             targetFolder = (Folder) rootNav.searchManagedEntity("Folder",vmfolder);
             checkName = (VirtualMachine) rootNav.searchManagedEntity("VirtualMachine", vm_name);
-        } catch (Exception ex) {
-            //NOTE TO SELF... I probably should split the above 3 statements into different try blocks
-            System.out.println("Error in cloneVM() : code 01 : " + ex.toString());
+        } catch (Exception e) {
+            System.out.println("Error in cloneVM() : code 01 : " + e.toString());
         }
         
         // Performs some checks before proceeding ... may need to clean this up
@@ -90,7 +91,7 @@ public class VmManager
             if(template==null) { System.out.println("Error: Template name not found!"); }
             if(targetFolder==null) {System.out.println("Error: Target folder for virtual machine not found!"); }
             if(checkName!=null) {System.out.println("Error: The specified virtual machine name is used!"); }
-            return;
+            return false;
         }
         
         // Set properties for VirtualMachineRelocateSpec
@@ -112,8 +113,9 @@ public class VmManager
                 cnt++;
             }
             relocateSpec.setPool( targetRP.getMOR() );
-        } catch (Exception ex) {
-            System.out.println("Error in cloneVM() : code 02 : " + ex.toString());
+        } catch (Exception e) {
+            System.out.println("Error in cloneVM() : code 02 : " + e.toString());
+            return false;
         }
         // relocateSpec.setDisk();              // Not used
         // relocateSpec.setDiskMoveType();      // Not used
@@ -134,7 +136,10 @@ public class VmManager
             }
         }catch(Exception ex) {
             System.out.println("Error in cloneVM() : code 03 : " + ex.toString());
+            return false;
         }
+        
+        return true;
     }
     
     /**
@@ -142,22 +147,24 @@ public class VmManager
      * 
      * @param   vm_name       - String value of target virtual machine name
      */
-    public void destroyVM(String vm_name) {
+    public boolean destroyVM(String vm_name) {
+    	boolean success = true;
         try {
             VirtualMachine vm = (VirtualMachine) rootNav.searchManagedEntity("VirtualMachine",vm_name);
             if(vm==null) {
                 System.out.println("The following virtual machine was not found: " + vm_name);
-                return;
             }
             
             Task task = vm.destroy_Task();
             if(task.waitForTask()==Task.SUCCESS) {
                 System.out.println(vm_name + " deleted");
             }
-        } catch ( Exception e ) 
-        { System.out.println( e.toString() ) ; 
+        } catch ( Exception e ) { 
+        	System.out.println( e.toString() ) ;
+            success = false;
         } 
-
+        
+        return success;
     }
     
     /**
@@ -180,8 +187,7 @@ public class VmManager
         } catch ( Exception e ) 
         { System.out.println( e.toString() ) ; }
     }
-    
-    
+      
     /**
      * Power off the target virtual machine. The virtual machine state must be powered on. 
      * If power state is suspended, the virtual machine must be powered on first.
@@ -252,12 +258,13 @@ public class VmManager
      * @param   vm_name             - String value of existing vm to be moved
      * @param   destinationHost     - String value of target host name
      */
-    void coldMigrateVM(String vm_name, String destinationHost) {
+    public boolean coldMigrateVM(String vm_name, String destinationHost) {
+    	boolean success = true;
         try {
             VirtualMachine vm = (VirtualMachine) rootNav.searchManagedEntity("VirtualMachine",vm_name);
             if(vm==null) {
                 System.out.println("The following virtual machine was not found: " + vm_name);
-                return;
+                success = false;
             }
             
             if(vm.getRuntime().getPowerState().toString().equals("poweredOn")) {
@@ -290,7 +297,9 @@ public class VmManager
             }
         } catch(Exception e) {
             System.out.println( e.toString());
+            success = false;
         }
+        return success;
     }
     
     /**
@@ -305,9 +314,7 @@ public class VmManager
      * 
      * @return   void
      */
-    void allocateResourceVM(String vm_name,
-                            String deviceType,                             
-                            String value) {
+    public void allocateResourceVM(String vm_name, String deviceType, String value) {
         try {
             VirtualMachine vm = (VirtualMachine) rootNav.searchManagedEntity("VirtualMachine",vm_name);
             if(vm==null) {
@@ -334,7 +341,7 @@ public class VmManager
                  * 
                  *  Total cpu available is 8 and caculated 1 cpu to be equivalent to 1980 MHz when calculating reservation
                   */
-                System.out.println("Setting CPU for VM:  [" + vm_name + "] to " + value);
+                System.out.println("Setting CPU for VM:  [" + vm_name + "] to " + value + " MHz");
                   
                 vmConfigSpec.setNumCPUs( Integer.parseInt(value) );  
                 ResourceAllocationInfo raInfo = new ResourceAllocationInfo();
@@ -355,12 +362,12 @@ public class VmManager
     }
     
     /**
-    * Check whether the demanded resourses are available on the server or not.
-    * 
-    * @param   hostname        - String value containing the name of the server
-    * @param   device          - String value for the resource to be checked
-    */
-   public long getReservationAvailFromHost(String hostname, String device)
+     * Check whether the demanded resourses are available on the server or not.
+     * 
+     * @param   hostname        - String value containing the name of the server
+     * @param   device          - String value for the resource to be checked
+     */
+    public long getReservationAvailFromHost(String hostname, String device)
    {
 	   long returnValue = -1;
 	   
@@ -388,5 +395,35 @@ public class VmManager
        return returnValue;
    }
     
+    
+    /**
+     * Gets the list of VMs currently present on both the hosts
+     * 
+     * @return   String[]
+     */    
+    
+    public ArrayList<String> GetVMList() 
+    {
+        ArrayList<String> VMList = new ArrayList<String>();
+        try {
+             //Get the list of all Virtual Machines
+             ManagedEntity[] vmList = rootNav.searchManagedEntities("VirtualMachine");
+             
+             int len=0;
+             while(len<vmList.length)
+             {
+                 if(vmList[len].getName().endsWith("vm"))
+                 {
+                     VMList.add(vmList[len].getName());
+                 }
+                 
+                 len++;
+             }
+             
+        } catch ( Exception e ) 
+        { System.out.println( e.toString() ) ; }
+        
+        return VMList;
+    }
     
 }

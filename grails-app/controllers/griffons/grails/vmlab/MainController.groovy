@@ -9,8 +9,8 @@ class MainController {
 		String VCAP_SERVICES = System.getenv('VCAP_SERVICES')
 		
 		if (request.method == "GET") {
-			// Creates a VmManager instance
-			vmanager = new VmManager()
+			
+			/// get list of vm in inventory
 			
 			
 			render(view: "index")
@@ -23,17 +23,12 @@ class MainController {
 			params?.each { key, value -> println( "params: $key = $value" ) }
 			
 			if ( params?.event == "CreateVm" ) // NAME OF ACTION
-			{	
-				
-				println "testing"
-				
-				//def range = 'a'..'m'
+			{
+				def range = 'a'..'l'
 				def vmname = params?.vmname
-				//def targetHost = range.contains(vmname[0].toLowerCase()) ? VmConfig.getHost01() : VmConfig.getHost02()  
+				def targetHost = range.contains(vmname[0].toLowerCase()) ? VmConfig.getHost01() : VmConfig.getHost02()  
 				
-				// DO ACTION
-				//def clonesuccess = 
-				vmanager.cloneVM(vmname, params?.temp, VmConfig.getVmFolder(), VmConfig.getHost02())
+				def clonesuccess = vmanager.cloneVM(vmname, params?.temp, VmConfig.getVmFolder(), targetHost)
 				
 				// set resource reservation
 				if(clonesuccess) {
@@ -59,13 +54,17 @@ class MainController {
 			
 			
 //			if ( params?.event == "CreateVM" ) // NAME OF ACTION
-//			{
-
-	
+//			{	
 //				// DO ACTION
 //			}		
 			
-			render(view: "index") // MAY NEED TO UPDATE DEPENDING NAME OF PAGE IF DIFFERENT
+			
+			
+			
+			
+			vmanager.finalize();
+			
+			render(view: "index")
 		}
 		
 		else { render(view: "/error") }
