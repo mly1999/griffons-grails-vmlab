@@ -65,6 +65,8 @@ public class VmManager
      * @return  void
      */
     public boolean cloneVM(String vm_name,
+    					String cpu_reservation,
+    					String mem_reservation,
                         String template_name, 
                         String vmfolder,
                         String hostname)
@@ -91,7 +93,7 @@ public class VmManager
             return false;
         }
         
-        // Set properties for VirtualMachineRelocateSpec
+        /* Set properties for VirtualMachineRelocateSpec */
         VirtualMachineRelocateSpec relocateSpec = new VirtualMachineRelocateSpec();
         try{           
             HostSystem hs = (HostSystem) rootNav.searchManagedEntity("HostSystem", hostname);
@@ -117,13 +119,29 @@ public class VmManager
         // relocateSpec.setDisk();              // Not used
         // relocateSpec.setDiskMoveType();      // Not used
         
-        // Set properties for VirtualMachineCloneSpec
+        
+        /* Set properties for VirtualMachineConfigSpec */
+        VirtualMachineConfigSpec vmConfigSpec = new VirtualMachineConfigSpec();
+        //VirtualMachineConfigSpec vmMemConfigSpec = new VirtualMachineConfigSpec();
+        
+        vmConfigSpec.setMemoryMB( Long.parseLong(mem_reservation) );
+        ResourceAllocationInfo vmMemAllocate = new ResourceAllocationInfo();      
+        vmMemAllocate.setReservation(Long.parseLong(mem_reservation));
+        vmConfigSpec.setMemoryAllocation(vmMemAllocate);
+        
+        vmConfigSpec.setNumCPUs( Integer.parseInt(cpu_reservation) );
+        ResourceAllocationInfo vmCpuAllocate = new ResourceAllocationInfo();
+        vmCpuAllocate.setReservation(Long.parseLong(cpu_reservation) * 2000 );
+        vmConfigSpec.setCpuAllocation(vmCpuAllocate);
+        
+        
+        /* Set properties for VirtualMachineCloneSpec */
         VirtualMachineCloneSpec cloneSpec = new VirtualMachineCloneSpec();
+        cloneSpec.setConfig(vmConfigSpec);
         cloneSpec.setLocation(relocateSpec);
         cloneSpec.setPowerOn(false);
         cloneSpec.setTemplate(false);
         //cloneSpec.setSnapshot();              // Property not used
-        //cloneSpec.setConfig();                // Property not used
         //cloneSpec.setCustomization();         // Property not used
          
         try{
@@ -299,6 +317,8 @@ public class VmManager
         return success;
     }
     
+    
+    //NOTE THAT THIS METHOD IS NOT USED ANYMORE ... SPECIFIED PROPERTIES FOR VirtualMachineConfigSpec in cloneVM()
     /**
      * Reconfigure resource allocation for virtual machine. CPU and Memory only
      * *Note: Virtual machine must be in a p
@@ -358,6 +378,9 @@ public class VmManager
         }
     }
     
+    
+    
+    
     /**
      * Check whether the demanded resourses are available on the server or not.
      * 
@@ -408,7 +431,7 @@ public class VmManager
              while(len<vmList.length)
              {
             	 // Display the inventory selectively. We purposely did this for testing ...
-                 if(vmList[len].getName().endsWith("-vm")) {
+                 if(vmList[len].getName().endsWith("-griffons")) {
                      VMList.add(vmList[len].getName());
                  }
                  

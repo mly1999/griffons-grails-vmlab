@@ -10,7 +10,14 @@ class MainController {
 		
 		if (request.method == "GET") {
 			/// get list of vm in inventory
-			render(view: "index")
+
+			vmanager = new VmManager()
+			def ls =  vmanager.GetVMList()
+			ls.each() { 
+				print " ${it}"	
+			};
+			vmanager.finalize();
+			render(view: "index", model:[ls:ls])
 		}
 		else if (request.method == "POST") {
 			// dump of params
@@ -18,27 +25,20 @@ class MainController {
 			
 			vmanager = new VmManager()
 	
-			if ( params?.event == "CreateVm" ) // NAME OF ACTION
+			if ( params?.operation == "Create" ) // NAME OF ACTION
 			{
 				// MAY REFACTOR TO MAKE THE LOGIC MORE EFFICIENT TO SELECT THE INITIAL HOST FOR VM
 				// virtual machine is assign to a host/resource pool based off first character of name 
 				def range = 'a'..'l'
-				def vmname = params?.vmname
+				def vmname = params?.vmname + "-griffons"
+
 				def targetHost = range.contains(vmname[0].toLowerCase()) ? VmConfig.getHost01() : VmConfig.getHost02()  
 				
-				def clonesuccess = vmanager.cloneVM(vmname, params?.temp, VmConfig.getVmFolder(), targetHost)
-				
-				// set resource reservation
-				if(clonesuccess) {
-					vmanger.allocateResourceVM(vmname, "cpu", params?.cpu)
-					vmanger.allocateResourceVM(vmname, "memory", params?.memory )
-				}
-				else {
-					 println "Unable to create virtual machine from template: " + vmname
-				}
+				boolean clonesuccess = vmanager.cloneVM(vmname, params?.cpu ,params?.memory , params?.temp, VmConfig.getVmFolder(), targetHost)
 			}
 			
-			if ( params?.event == "deployVm" ) {
+
+			if ( params?.operation == "Start" ) {
 				boolean deployOnCurrHost = true
 				boolean coldMigrate = false
 				
@@ -84,17 +84,32 @@ class MainController {
 				}
 			}
 			
+			
+			
+			
+			
+			
 			/*
 			 * Template below to create events
 			 */
 /*
-			if ( params?.event == "[ACTION_NAME]" )
+			if ( params?.operation == "[ACTION_NAME]" )
 			{	
 				// [CODE TO DO ACTION]
 			}		
  */
+			
+			
+			
+//			vmanager = new VmManager()
+			def ls =  vmanager.GetVMList()
+			ls.each() {
+				print " ${it}"
+			};
 			vmanager.finalize();
-			render(view: "index")
+			render(view: "index", model:[ls:ls])
+//			vmanager.finalize();
+//			render(view: "index")
 		}
 		else { render(view: "/error") }
 	}
