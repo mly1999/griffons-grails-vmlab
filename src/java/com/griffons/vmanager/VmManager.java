@@ -1,4 +1,4 @@
- package com.griffons.vmanager;
+package com.griffons.vmanager;
 
 import java.net.URL;
 import com.vmware.vim25.*;
@@ -7,9 +7,7 @@ import java.util.ArrayList;
 
 /**
  * Provides basic tasks to manage a vcenter
- * 
  * @author Griffons
- * 
  */
 
 public class VmManager
@@ -42,8 +40,7 @@ public class VmManager
                 System.out.println("Unable to make connection to vm server!");
                 this.si.getServerConnection().logout();
         }
-    }
-    
+    }    
     /**
      * Destructor for objects of class VmManager
      */
@@ -367,13 +364,13 @@ public class VmManager
      * @param   hostname        - String value containing the name of the server
      * @param   device          - String value for the resource to be checked
      */
-    public long getReservationAvailFromHost(String hostname, String device)
+    public long getReservationAvailFromHost(String resourcepool, String device)
    {
 	   long returnValue = -1;
 	   
        try
        {
-           ResourcePool resPool = (ResourcePool) rootNav.searchManagedEntity("ResourcePool", hostname);
+           ResourcePool resPool = (ResourcePool) rootNav.searchManagedEntity("ResourcePool", resourcepool);
            ResourcePoolRuntimeInfo resInfo = resPool.getRuntime();
            
            if(device.equalsIgnoreCase("cpu"))
@@ -394,14 +391,12 @@ public class VmManager
        
        return returnValue;
    }
-    
-    
+       
     /**
      * Gets the list of VMs currently present on both the hosts
      * 
      * @return   String[]
      */    
-    
     public ArrayList<String> GetVMList() 
     {
         ArrayList<String> VMList = new ArrayList<String>();
@@ -412,8 +407,8 @@ public class VmManager
              int len=0;
              while(len<vmList.length)
              {
-                 if(vmList[len].getName().endsWith("vm"))
-                 {
+            	 // Display the inventory selectively. We purposely did this for testing ...
+                 if(vmList[len].getName().endsWith("-vm")) {
                      VMList.add(vmList[len].getName());
                  }
                  
@@ -425,48 +420,50 @@ public class VmManager
         
         return VMList;
     }
+        
+    public long getCPUReservationVMInfo(String vm_name) {
+    	long value = 0;
+    	try {
+    		VirtualMachine vm = (VirtualMachine) rootNav.searchManagedEntity("VirtualMachine", vm_name);
+    		value = vm.getConfig().getCpuAllocation().getReservation();
+    	} catch(Exception e){
+    		System.out.println( e.toString() );
+    	}
+    	return value;
+    }
     
+    public long getMEMReservationVMInfo(String vm_name) {
+    	long value = 0;
+    	try {
+    		VirtualMachine vm = (VirtualMachine) rootNav.searchManagedEntity("VirtualMachine", vm_name);
+    		value = vm.getConfig().getMemoryAllocation().getReservation();
+    	} catch(Exception e){
+    		System.out.println( e.toString() );
+    	}
+    	return value;
+    }
     
-    public long[] getVMInfo(String vm_name) {
-    	long[] configSpec = new long[2];
+    public String getRPoolNameFromVMInfo(String vm_name) {
+    	String resourcepool = "";
+    	try {
+    		VirtualMachine vm = (VirtualMachine) rootNav.searchManagedEntity("VirtualMachine", vm_name);
+    		resourcepool = vm.getResourcePool().getSummary().getName();
+    	} catch(Exception e){
+    		System.out.println( e.toString() );
+    	}
+    	return resourcepool;
+    }
+    
+    public String getVmPowerState(String vm_name) {
+    	String powerstate = "";
     	
     	try {
     	VirtualMachine vm = (VirtualMachine) rootNav.searchManagedEntity("VirtualMachine", vm_name);
-    	VirtualMachineConfigInfo vmci = vm.getConfig();
-    	ResourceAllocationInfo rCpu = vmci.getCpuAllocation(); 
-    	configSpec[0] = rCpu.getReservation();
-    	
-    	ResourceAllocationInfo rMem = vmci.getMemoryAllocation();
-    	configSpec[1] = rMem.getReservation();
-    	
-    	} catch(Exception e){
+    	powerstate = vm.getRuntime().getPowerState().toString();
+    	} catch(Exception e) {
     		System.out.println( e.toString() );
     	}
     	
-    	return configSpec;
+    	return powerstate;
     }
-    
-    
-    
-    public String getVMRPInfo(String vm_name) {
-    	String hostname = "";
-    	try {
-    		VirtualMachine vm = (VirtualMachine) rootNav.searchManagedEntity("VirtualMachine", vm_name);
-    		hostname = vm.getResourcePool().getSummary().getName();
-    	} catch(Exception e){
-    		System.out.println( e.toString() );
-    	}
-    	
-    	return hostname;
-    }
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
 }
