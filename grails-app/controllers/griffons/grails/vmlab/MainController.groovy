@@ -40,13 +40,8 @@ class MainController {
 			
 			if ( params?.operation == "Delete")
 			{
-				boolean deployOnCurrHost = true
-				boolean coldMigrate = false
 				
 				def vmname = params?.vmname
-				def currHost = vmanager.getRPoolNameFromVMInfo(vmname)
-				def otherHost = currHost == VmConfig.getHost01() ? VmConfig.getHost02() : VmConfig.getHost01()
-				
 				
 				boolean destroysuccess = vmanager.destroyVM(vmname)
 				
@@ -54,43 +49,24 @@ class MainController {
 			
 			if ( params?.operation == "Suspend")
 			{
-				boolean deployOnCurrHost = true
-				boolean coldMigrate = false
-				
-				def vmname = params?.vmname
-				def currHost = vmanager.getRPoolNameFromVMInfo(vmname)
-				def otherHost = currHost == VmConfig.getHost01() ? VmConfig.getHost02() : VmConfig.getHost01()
-				
-				
-				boolean destroysuccess = vmanager.suspendVM(vmname)
+				def vmname = params?.vmname								
+				 vmanager.suspendVM(vmname)
 				
 			}
 			
 			if ( params?.operation == "Reset")
 			{
-				boolean deployOnCurrHost = true
-				boolean coldMigrate = false
 				
-				def vmname = params?.vmname
-				def currHost = vmanager.getRPoolNameFromVMInfo(vmname)
-				def otherHost = currHost == VmConfig.getHost01() ? VmConfig.getHost02() : VmConfig.getHost01()
-				
-				
-				boolean destroysuccess = vmanager.resetVM(vmname)
+				def vmname = params?.vmname				
+				vmanager.resetVM(vmname)
 				
 			}
 			
 			if ( params?.operation == "Stop")
 			{
-				boolean deployOnCurrHost = true
-				boolean coldMigrate = false
 				
 				def vmname = params?.vmname
-				def currHost = vmanager.getRPoolNameFromVMInfo(vmname)
-				def otherHost = currHost == VmConfig.getHost01() ? VmConfig.getHost02() : VmConfig.getHost01()
-				
-				
-				boolean poweroffsuccess = vmanager.powerOffVM(vmname)
+				vmanager.powerOffVM(vmname)
 				
 			}
 			
