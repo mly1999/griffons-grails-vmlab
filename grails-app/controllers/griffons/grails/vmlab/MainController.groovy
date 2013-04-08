@@ -37,7 +37,63 @@ class MainController {
 				boolean clonesuccess = vmanager.cloneVM(vmname, params?.cpu ,params?.memory , params?.temp, VmConfig.getVmFolder(), targetHost)
 			}
 			
-
+			
+			if ( params?.operation == "Delete")
+			{
+				boolean deployOnCurrHost = true
+				boolean coldMigrate = false
+				
+				def vmname = params?.vmname
+				def currHost = vmanager.getRPoolNameFromVMInfo(vmname)
+				def otherHost = currHost == VmConfig.getHost01() ? VmConfig.getHost02() : VmConfig.getHost01()
+				
+				
+				boolean destroysuccess = vmanager.destroyVM(vmname)
+				
+			}
+			
+			if ( params?.operation == "Suspend")
+			{
+				boolean deployOnCurrHost = true
+				boolean coldMigrate = false
+				
+				def vmname = params?.vmname
+				def currHost = vmanager.getRPoolNameFromVMInfo(vmname)
+				def otherHost = currHost == VmConfig.getHost01() ? VmConfig.getHost02() : VmConfig.getHost01()
+				
+				
+				boolean destroysuccess = vmanager.suspendVM(vmname)
+				
+			}
+			
+			if ( params?.operation == "Reset")
+			{
+				boolean deployOnCurrHost = true
+				boolean coldMigrate = false
+				
+				def vmname = params?.vmname
+				def currHost = vmanager.getRPoolNameFromVMInfo(vmname)
+				def otherHost = currHost == VmConfig.getHost01() ? VmConfig.getHost02() : VmConfig.getHost01()
+				
+				
+				boolean destroysuccess = vmanager.resetVM(vmname)
+				
+			}
+			
+			if ( params?.operation == "Stop")
+			{
+				boolean deployOnCurrHost = true
+				boolean coldMigrate = false
+				
+				def vmname = params?.vmname
+				def currHost = vmanager.getRPoolNameFromVMInfo(vmname)
+				def otherHost = currHost == VmConfig.getHost01() ? VmConfig.getHost02() : VmConfig.getHost01()
+				
+				
+				boolean poweroffsuccess = vmanager.powerOffVM(vmname)
+				
+			}
+			
 			if ( params?.operation == "Start" ) {
 				boolean deployOnCurrHost = true
 				boolean coldMigrate = false
@@ -111,6 +167,9 @@ class MainController {
 //			vmanager.finalize();
 //			render(view: "index")
 		}
+		
+		
+		
 		else { render(view: "/error") }
 	}
 }
